@@ -1,4 +1,4 @@
-// Chichen Itza Project - CS0045
+﻿// Chichen Itza Project - CS0045
 // Two scenes: Ancient (night, overgrown), Modern (day, tourist site)
 // Uses: VBOs, vertex arrays, camera, lights, headlight, keyboard/mouse/timer
 
@@ -31,7 +31,7 @@ struct Camera {
     float yaw;   // rotate around Y axis (left/right)
     float pitch; // rotate around X axis (up/down)
     float fov;
-} camera = { 0.0f, 10.0f, 40.0f, 180.0f, -10.0f, 60.0f };
+} camera = { 0.0f, 12.0f, 42.0f, 180.0f, -8.0f, 60.0f };
 // Start in front of pyramid, looking toward origin
 
 void applyCamera() {
@@ -78,18 +78,26 @@ float timeSeconds = 0.0f;
 float cloudOffset = 0.0f;
 float touristBounce = 0.0f;
 
+// Forward declarations for drawing helpers
+void drawClouds(SceneType scene);
+void drawStairs();
+void drawGround(SceneType scene);
+void drawTempleDetails(SceneType scene);
+
+
 // Meshes
 MeshVBO pyramidMesh;
 MeshVBO groundMesh;
 
-// Lights
+// ---------------------- Lights ----------------------
+
 void setupLights(SceneType scene) {
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     glEnable(GL_LIGHT1);
 
     // Reset all lights each frame
-    GLfloat globalAmbient[] = { 0.1f, 0.1f, 0.1f, 1.0f };
+    GLfloat globalAmbient[] = { 0.08f, 0.08f, 0.08f, 1.0f };
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmbient);
 
     // Common camera direction (for headlight)
@@ -101,9 +109,9 @@ void setupLights(SceneType scene) {
 
     if (scene == ANCIENT_SCENE) {
         // Moonlight (LIGHT0)
-        GLfloat ambient0[] = { 0.05f, 0.05f, 0.15f, 1.0f };
-        GLfloat diffuse0[] = { 0.2f, 0.2f, 0.4f, 1.0f };
-        GLfloat specular0[] = { 0.2f, 0.2f, 0.4f, 1.0f };
+        GLfloat ambient0[] = { 0.03f, 0.03f, 0.10f, 1.0f };
+        GLfloat diffuse0[] = { 0.15f, 0.15f, 0.35f, 1.0f };
+        GLfloat specular0[] = { 0.15f, 0.15f, 0.35f, 1.0f };
         GLfloat position0[] = { 30.0f, 40.0f, 10.0f, 1.0f };
 
         glLightfv(GL_LIGHT0, GL_AMBIENT, ambient0);
@@ -129,9 +137,9 @@ void setupLights(SceneType scene) {
     }
     else {
         // Bright sun (LIGHT0)
-        GLfloat ambient0[] = { 0.3f, 0.3f, 0.3f, 1.0f };
-        GLfloat diffuse0[] = { 0.9f, 0.9f, 0.8f, 1.0f };
-        GLfloat specular0[] = { 0.6f, 0.6f, 0.5f, 1.0f };
+        GLfloat ambient0[] = { 0.30f, 0.30f, 0.30f, 1.0f };
+        GLfloat diffuse0[] = { 0.95f, 0.95f, 0.88f, 1.0f };
+        GLfloat specular0[] = { 0.60f, 0.60f, 0.55f, 1.0f };
         GLfloat position0[] = { 0.0f, 60.0f, 30.0f, 1.0f };
 
         glLightfv(GL_LIGHT0, GL_AMBIENT, ambient0);
@@ -162,7 +170,7 @@ void drawSkybox(SceneType scene) {
     glTranslatef(camera.x, camera.y, camera.z);
     glBegin(GL_QUADS);
     if (scene == ANCIENT_SCENE) glColor3f(0.02f, 0.02f, 0.08f);
-    else                         glColor3f(0.6f, 0.8f, 1.0f);
+    else                        glColor3f(0.6f, 0.8f, 1.0f);
 
     // +Z
     glVertex3f(-size, -size, size);
@@ -207,18 +215,35 @@ void drawMeshLit(const MeshVBO& mesh, float r, float g, float b) {
 
     GLfloat materialDiffuse[] = { r, g, b, 1.0f };
     GLfloat materialAmbient[] = { r * 0.3f, g * 0.3f, b * 0.3f, 1.0f };
-    GLfloat materialSpec[] = { 0.4f, 0.4f, 0.4f, 1.0f };
+    GLfloat materialSpec[] = { 0.35f, 0.35f, 0.35f, 1.0f };
 
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, materialAmbient);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, materialDiffuse);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, materialSpec);
-    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 30.0f);
+    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 25.0f);
 
     glDrawArrays(GL_TRIANGLES, 0, mesh.vertexCount);
 
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_NORMAL_ARRAY);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+// Big visible ground using a cube, so it always shows clearly
+void drawGround(SceneType scene) {
+    glDisable(GL_LIGHTING);
+    glPushMatrix();
+    glTranslatef(0.0f, -1.0f, 0.0f);
+    glScalef(200.0f, 1.0f, 200.0f);
+
+    if (scene == ANCIENT_SCENE)
+        glColor3f(0.27f, 0.20f, 0.12f); // earth
+    else
+        glColor3f(0.33f, 0.78f, 0.30f); // grass
+
+    glutSolidCube(1.0f);
+    glPopMatrix();
+    glEnable(GL_LIGHTING);
 }
 
 // Simple tree: trunk (box) + canopy (scaled sphere-ish)
@@ -273,32 +298,415 @@ void drawTourist(float x, float z) {
     glPopMatrix();
 }
 
+// Clouds
+void drawClouds(SceneType scene) {
+    glDisable(GL_LIGHTING);
+
+    // Cloud color per scene
+    if (scene == ANCIENT_SCENE)
+        glColor3f(0.5f, 0.5f, 0.6f);   // darker, stormy-ish
+    else
+        glColor3f(0.98f, 0.98f, 0.99f); // bright white
+
+    // Make a ring of cloud clusters above the scene, slowly moving
+    float baseRadius = 60.0f;
+    float baseHeight = 30.0f;
+
+    for (int i = 0; i < 8; ++i) {
+        float angle = (float)i * (2.0f * (float)M_PI / 8.0f)
+            + cloudOffset * 0.01f; // slow drift
+
+        float cx = cosf(angle) * baseRadius;
+        float cz = sinf(angle) * baseRadius;
+        float cy = baseHeight + (i % 2) * 3.0f;
+
+        glPushMatrix();
+        glTranslatef(cx, cy, cz);
+
+        // Each cluster: 3–4 overlapping spheres
+        glutSolidSphere(4.0, 12, 12);
+        glTranslatef(3.0f, 1.0f, 1.5f);
+        glutSolidSphere(3.0, 12, 12);
+        glTranslatef(-4.0f, 0.0f, -2.0f);
+        glutSolidSphere(3.5, 12, 12);
+        glPopMatrix();
+    }
+
+    glEnable(GL_LIGHTING);
+}
+
+// ---------------- Rocks and "dirty" ground for ancient scene ----------------
+
+void drawRock(float x, float z, float scale)
+{
+    glPushMatrix();
+    glTranslatef(x, 0.0f, z);
+
+    glDisable(GL_LIGHTING);
+    glColor3f(0.40f, 0.40f, 0.42f);   // gray rock
+
+    // Slightly squashed sphere to look like a rock
+    glPushMatrix();
+    glTranslatef(0.0f, 0.3f * scale, 0.0f);
+    glScalef(scale, scale * 0.6f, scale);
+    glutSolidSphere(1.0, 12, 12);
+    glPopMatrix();
+
+    glEnable(GL_LIGHTING);
+    glPopMatrix();
+}
+
+// Darker ground patches near the pyramid to make it look worn / dirty
+void drawAncientGroundPatches()
+{
+    glDisable(GL_LIGHTING);
+    glColor3f(0.18f, 0.13f, 0.09f);   // darker dirt
+
+    auto patch = [](float x, float z, float sx, float sz)
+        {
+            glPushMatrix();
+            glTranslatef(x, -0.8f, z);    // slightly above the big ground cube
+            glScalef(sx, 0.4f, sz);
+            glutSolidCube(1.0f);
+            glPopMatrix();
+        };
+
+    // A few irregular patches around the base
+    patch(6.0f, 18.0f, 10.0f, 6.0f);
+    patch(-8.0f, 16.0f, 7.0f, 5.0f);
+    patch(10.0f, -15.0f, 8.0f, 7.0f);
+    patch(-12.0f, -17.0f, 9.0f, 6.0f);
+    patch(0.0f, 22.0f, 12.0f, 4.0f);
+
+    glEnable(GL_LIGHTING);
+}
+
+// Place many rocks around the pyramid in rough rings
+void drawRocksAndDebris()
+{
+    // Ring of rocks around the base
+    float baseRadius = 28.0f;
+
+    for (int i = 0; i < 32; ++i)
+    {
+        float angle = (float)i * (2.0f * (float)M_PI / 32.0f);
+        float radius = baseRadius + (i % 4) * 2.5f;   // slightly irregular
+
+        float x = cosf(angle) * radius;
+        float z = sinf(angle) * radius;
+        float s = 0.7f + (i % 3) * 0.25f;             // various sizes
+
+        drawRock(x, z, s);
+    }
+
+    // A few larger rocks closer to some stairs
+    drawRock(5.0f, 20.0f, 1.2f);
+    drawRock(-7.0f, 19.0f, 1.0f);
+    drawRock(11.0f, -19.0f, 1.3f);
+    drawRock(-10.0f, -18.0f, 1.1f);
+
+    // Dirty patches right after the rocks
+    drawAncientGroundPatches();
+}
+
+
+// ---------- Full-height staircases inspired by El Castillo ----------
+
+void drawOneStaircase(float yawDegrees) {
+    const float baseHalf = 12.5f;       // match pyramid base
+    const float terraceHeight = 1.2f;
+    const int   terraceCount = 12;
+    const float pyramidHeight = terraceCount * terraceHeight;
+
+    const int   stepCount = 30;
+    const float stepHeight = pyramidHeight / (float)stepCount;
+    const float baseZStart = baseHalf + 1.2f;
+    const float baseZEnd = baseHalf - 10.0f;
+    const float stepDepth = 1.2f;
+
+    // Stop the stairs a bit before the very top so they don't overlap the temple
+    const float maxStairY = pyramidHeight - stepHeight * 3.0f;
+    // tweak 3.0f up/down to control how far they stop from the top
+
+    glPushMatrix();
+    glRotatef(yawDegrees, 0.0f, 1.0f, 0.0f);
+
+    glDisable(GL_LIGHTING);
+    glColor3f(0.78f, 0.74f, 0.68f); // slightly lighter to stand out from terraces
+
+    for (int i = 0; i < stepCount; ++i) {
+        float t = (float)i / (float)(stepCount - 1);
+
+        float y = 0.3f + (i + 0.5f) * stepHeight;
+        float z = baseZStart + (baseZEnd - baseZStart) * t;
+        float width = 7.0f - t * 3.0f; // staircase becomes narrower near the top
+
+        // Clamp stair generation so we don't reach into the temple
+        if (y > maxStairY)
+            break;
+
+        glPushMatrix();
+        glTranslatef(0.0f, y, z);
+        glScalef(width, stepHeight * 0.9f, stepDepth);
+        glutSolidCube(1.0);
+        glPopMatrix();
+    }
+
+    glEnable(GL_LIGHTING);
+    glPopMatrix();
+}
+
+
+
+void drawStairs() {
+    glPushMatrix();
+    // Front (+Z)
+    drawOneStaircase(0.0f);
+    // Right (+X)
+    drawOneStaircase(90.0f);
+    // Back (-Z)
+    drawOneStaircase(180.0f);
+    // Left (-X)
+    drawOneStaircase(-90.0f);
+    glPopMatrix();
+}
+
+
+// ---------------- Temple entrance + decorative details ----------------
+//
+// NOTE: These numbers assume the same values used in createPyramidMesh():
+//   terraceCount   = 9
+//   terraceHeight  = 1.4f
+//   temple half-size = 2.2f (cube)
+// If you change those, tweak the constants here a bit.
+
+void drawTempleDetails(SceneType scene)
+{
+    // ---- Temple geometry (must match createPyramidMesh) ----
+    const int   terraceCount = 9;
+    const float terraceHeight = 1.4f;
+    const float templeHalfSize = 3.5f;   // half size used in addBox(...)
+    const float templeOffsetY = 1.2f;   // same offset used there
+
+    float terracesHeight = terraceCount * terraceHeight;
+    float templeCenterY = terracesHeight + templeOffsetY;
+
+    // Small epsilon so quads are slightly in front of temple faces
+    const float eps = 0.05f;
+
+    // ---------------- Common colors ----------------
+    GLfloat doorColorAncient[3] = { 0.03f, 0.03f, 0.03f };
+    GLfloat doorColorModern[3] = { 0.10f, 0.10f, 0.10f };
+    GLfloat frameColorAncient[3] = { 0.65f, 0.63f, 0.60f };
+    GLfloat frameColorModern[3] = { 0.98f, 0.96f, 0.92f };
+
+    glDisable(GL_LIGHTING);
+    glDisable(GL_CULL_FACE);   // so all quads are visible from any side
+
+    // Helper lambdas to pick colors
+    auto setDoorColor = [&]() {
+        if (scene == ANCIENT_SCENE)
+            glColor3f(doorColorAncient[0], doorColorAncient[1], doorColorAncient[2]);
+        else
+            glColor3f(doorColorModern[0], doorColorModern[1], doorColorModern[2]);
+        };
+
+    auto setFrameColor = [&]() {
+        if (scene == ANCIENT_SCENE)
+            glColor3f(frameColorAncient[0], frameColorAncient[1], frameColorAncient[2]);
+        else
+            glColor3f(frameColorModern[0], frameColorModern[1], frameColorModern[2]);
+        };
+
+    // ---------------- Main front entrance (+Z) ----------------
+    {
+        float doorHalfWidth = 1.4f;
+        float doorBottomY = templeCenterY - 1.5f;
+        float doorTopY = templeCenterY + 0.5f;
+        float zFront = templeHalfSize + eps;
+
+        // Door opening
+        setDoorColor();
+        glBegin(GL_QUADS);
+        glVertex3f(-doorHalfWidth, doorBottomY, zFront);
+        glVertex3f(doorHalfWidth, doorBottomY, zFront);
+        glVertex3f(doorHalfWidth, doorTopY, zFront);
+        glVertex3f(-doorHalfWidth, doorTopY, zFront);
+        glEnd();
+
+        // Frame
+        setFrameColor();
+        float frameDepth = 0.25f;
+
+        // Top lintel
+        glBegin(GL_QUADS);
+        glVertex3f(-doorHalfWidth - 0.3f, doorTopY + 0.25f, zFront);
+        glVertex3f(doorHalfWidth + 0.3f, doorTopY + 0.25f, zFront);
+        glVertex3f(doorHalfWidth + 0.3f, doorTopY + 0.75f, zFront + frameDepth);
+        glVertex3f(-doorHalfWidth - 0.3f, doorTopY + 0.75f, zFront + frameDepth);
+        glEnd();
+
+        // Left column
+        glBegin(GL_QUADS);
+        glVertex3f(-doorHalfWidth - 0.3f, doorBottomY - 0.1f, zFront);
+        glVertex3f(-doorHalfWidth, doorBottomY - 0.1f, zFront);
+        glVertex3f(-doorHalfWidth, doorTopY + 0.8f, zFront + frameDepth);
+        glVertex3f(-doorHalfWidth - 0.3f, doorTopY + 0.8f, zFront + frameDepth);
+        glEnd();
+
+        // Right column
+        glBegin(GL_QUADS);
+        glVertex3f(doorHalfWidth, doorBottomY - 0.1f, zFront);
+        glVertex3f(doorHalfWidth + 0.3f, doorBottomY - 0.1f, zFront);
+        glVertex3f(doorHalfWidth + 0.3f, doorTopY + 0.8f, zFront + frameDepth);
+        glVertex3f(doorHalfWidth, doorTopY + 0.8f, zFront + frameDepth);
+        glEnd();
+    }
+
+    // ----------- Helper for smaller side/back entrances ---------
+    auto drawSmallEntranceZ = [&](bool backSide) {
+        // backSide == false → +Z, true → -Z
+        float doorHalfWidth = 0.9f;
+        float doorBottomY = templeCenterY - 1.0f;
+        float doorTopY = templeCenterY + 0.2f;
+        float zSign = backSide ? -1.0f : 1.0f;
+        float zFace = zSign * (templeHalfSize + eps);
+        float frameDepth = 0.20f;
+
+        // Door
+        setDoorColor();
+        glBegin(GL_QUADS);
+        glVertex3f(-doorHalfWidth, doorBottomY, zFace);
+        glVertex3f(doorHalfWidth, doorBottomY, zFace);
+        glVertex3f(doorHalfWidth, doorTopY, zFace);
+        glVertex3f(-doorHalfWidth, doorTopY, zFace);
+        glEnd();
+
+        // Simple frame strip around
+        setFrameColor();
+        glBegin(GL_QUADS);
+        // Top strip
+        glVertex3f(-doorHalfWidth - 0.2f, doorTopY + 0.15f, zFace);
+        glVertex3f(doorHalfWidth + 0.2f, doorTopY + 0.15f, zFace);
+        glVertex3f(doorHalfWidth + 0.2f, doorTopY + 0.40f, zFace + zSign * frameDepth);
+        glVertex3f(-doorHalfWidth - 0.2f, doorTopY + 0.40f, zFace + zSign * frameDepth);
+        glEnd();
+        };
+
+    auto drawSmallEntranceX = [&](bool rightSide) {
+        // rightSide == false → -X, true → +X
+        float doorHalfWidth = 0.9f;
+        float doorBottomY = templeCenterY - 1.0f;
+        float doorTopY = templeCenterY + 0.2f;
+        float xSign = rightSide ? 1.0f : -1.0f;
+        float xFace = xSign * (templeHalfSize + eps);
+        float frameDepth = 0.20f;
+
+        // Door
+        setDoorColor();
+        glBegin(GL_QUADS);
+        glVertex3f(xFace, doorBottomY, -doorHalfWidth);
+        glVertex3f(xFace, doorBottomY, doorHalfWidth);
+        glVertex3f(xFace, doorTopY, doorHalfWidth);
+        glVertex3f(xFace, doorTopY, -doorHalfWidth);
+        glEnd();
+
+        // Top strip
+        setFrameColor();
+        glBegin(GL_QUADS);
+        glVertex3f(xFace, doorTopY + 0.15f, -doorHalfWidth - 0.2f);
+        glVertex3f(xFace, doorTopY + 0.15f, doorHalfWidth + 0.2f);
+        glVertex3f(xFace + xSign * frameDepth, doorTopY + 0.40f, doorHalfWidth + 0.2f);
+        glVertex3f(xFace + xSign * frameDepth, doorTopY + 0.40f, -doorHalfWidth - 0.2f);
+        glEnd();
+        };
+
+    // Back (-Z), Left (-X), Right (+X)
+    drawSmallEntranceZ(true);   // back side
+    drawSmallEntranceX(false);  // left side
+    drawSmallEntranceX(true);   // right side
+
+    // ---------------- Dark band around temple top ----------------
+    float bandTopY = templeCenterY + templeHalfSize - 0.2f;
+    float bandBottomY = bandTopY - 0.4f;
+    float bandHalfX = templeHalfSize + 0.05f;
+    float bandHalfZ = templeHalfSize + 0.05f;
+
+    if (scene == ANCIENT_SCENE)
+        glColor3f(0.35f, 0.35f, 0.36f);
+    else
+        glColor3f(0.45f, 0.45f, 0.47f);
+
+    glBegin(GL_QUADS);
+    // Front
+    glVertex3f(-bandHalfX, bandBottomY, bandHalfZ);
+    glVertex3f(bandHalfX, bandBottomY, bandHalfZ);
+    glVertex3f(bandHalfX, bandTopY, bandHalfZ);
+    glVertex3f(-bandHalfX, bandTopY, bandHalfZ);
+
+    // Back
+    glVertex3f(-bandHalfX, bandBottomY, -bandHalfZ);
+    glVertex3f(-bandHalfX, bandTopY, -bandHalfZ);
+    glVertex3f(bandHalfX, bandTopY, -bandHalfZ);
+    glVertex3f(bandHalfX, bandBottomY, -bandHalfZ);
+
+    // Left
+    glVertex3f(-bandHalfX, bandBottomY, -bandHalfZ);
+    glVertex3f(-bandHalfX, bandBottomY, bandHalfZ);
+    glVertex3f(-bandHalfX, bandTopY, bandHalfZ);
+    glVertex3f(-bandHalfX, bandTopY, -bandHalfZ);
+
+    // Right
+    glVertex3f(bandHalfX, bandBottomY, -bandHalfZ);
+    glVertex3f(bandHalfX, bandTopY, -bandHalfZ);
+    glVertex3f(bandHalfX, bandTopY, bandHalfZ);
+    glVertex3f(bandHalfX, bandBottomY, bandHalfZ);
+    glEnd();
+
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_LIGHTING);
+}
+
+
 // ---------------------- Scenes ----------------------
 
 void drawAncientScene() {
-    // Ground (dark dirt)
-    drawMeshLit(groundMesh, 0.2f, 0.15f, 0.1f);
+    // Slightly darker, more desaturated stone with a hint of green
+    drawMeshLit(pyramidMesh, 0.38f, 0.40f, 0.34f);   // darker, more mossy
 
-    // Pyramid (weathered stone)
-    drawMeshLit(pyramidMesh, 0.6f, 0.5f, 0.4f);
+    // Staircases cutting up each face
+    drawStairs();
 
-    // Dense jungle trees around pyramid
-    for (int i = 0; i < 32; ++i) {
-        float angle = (float)i * (2.0f * (float)M_PI / 32.0f);
-        float radius = 35.0f + (i % 5) * 2.0f;
+    drawTempleDetails(ANCIENT_SCENE);
+
+    // --- NEW: rocks + dirty ground around the pyramid ---
+    drawRocksAndDebris();
+
+    // Dense jungle trees around pyramid (more trees + two rings)
+    for (int i = 0; i < 100; ++i) {
+        float angle = (float)i * (2.0f * (float)M_PI / 48.0f);
+
+        // inner + outer ring effect
+        float baseRadius = (i % 2 == 0) ? 32.0f : 40.0f;
+        float radius = baseRadius + (i % 5) * 1.5f;
+
         float x = cosf(angle) * radius;
         float z = sinf(angle) * radius;
-        float scale = 1.0f + (i % 3) * 0.2f;
+        float scale = 0.9f + (i % 3) * 0.30f;   // more size variation
+
         drawTree(x, z, scale, ANCIENT_SCENE);
     }
 }
 
-void drawModernScene() {
-    // Ground (green grass)
-    drawMeshLit(groundMesh, 0.4f, 0.7f, 0.3f);
 
-    // Pyramid (clean bright limestone)
-    drawMeshLit(pyramidMesh, 1.0f, 0.95f, 0.85f);
+void drawModernScene() {
+    // Clean bright limestone
+    drawMeshLit(pyramidMesh, 1.0f, 0.96f, 0.90f);
+
+    // Sharp staircases
+    drawStairs();
+
+    drawTempleDetails(MODERN_SCENE);
 
     // Fewer, placed trees (landscaped)
     drawTree(-25.0f, -25.0f, 1.5f, MODERN_SCENE);
@@ -331,7 +739,7 @@ void addBox(std::vector<float>& data,
         float nx, float ny, float nz)
         {
             float v[9] = { x1,y1,z1,x2,y2,z2,x3,y3,z3 };
-            for (int i = 0;i < 3;i++) {
+            for (int i = 0; i < 3; ++i) {
                 data.push_back(v[i * 3 + 0]);
                 data.push_back(v[i * 3 + 1]);
                 data.push_back(v[i * 3 + 2]);
@@ -373,20 +781,24 @@ void addBox(std::vector<float>& data,
 void createPyramidMesh(MeshVBO& mesh) {
     std::vector<float> data;
 
-    // Step pyramid: 9 levels + small temple
-    float baseHalf = 15.0f;
-    float levelHeight = 2.0f;
-    float y = levelHeight;
+    // More El Castillo–like proportions:
+    // 9 terraces, each slightly inset, shorter height,
+    // with a small temple on top.
+    const int   terraceCount = 9;
+    const float baseHalf = 13.5f;
+    const float terraceHeight = 1.4f;
 
-    for (int i = 0; i < 9; ++i) {
-        float halfSize = baseHalf - i * 1.5f;
-        float centerY = y;
-        addBox(data, halfSize, levelHeight * 0.5f, halfSize, centerY, 0.0f);
-        y += levelHeight;
+    float currentY = terraceHeight * 0.5f;
+
+    for (int i = 0; i < terraceCount; ++i) {
+        float halfSize = baseHalf - i * 1.2f;
+        addBox(data, halfSize, terraceHeight * 0.5f, halfSize, currentY, 0.0f);
+        currentY += terraceHeight;
     }
 
-    // Temple on top
-    addBox(data, 3.0f, 2.0f, 3.0f, y + 1.0f, 0.0f);
+    // Temple on top (slightly rectangular, like the real one)
+    float templeCenterY = currentY + 1.2f;
+    addBox(data, 3.5f, 2.0f, 3.5f, templeCenterY, 0.0f);
 
     mesh.vertexCount = (int)(data.size() / 6);
 
@@ -396,6 +808,8 @@ void createPyramidMesh(MeshVBO& mesh) {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
+// Ground VBO is still created (to satisfy VBO requirement) but we now
+// use the simpler cube-based drawGround() for visual clarity.
 void createGroundMesh(MeshVBO& mesh) {
     std::vector<float> data;
 
@@ -407,7 +821,7 @@ void createGroundMesh(MeshVBO& mesh) {
         float x3, float z3)
         {
             float v[9] = { x1,y,z1,x2,y,z2,x3,y,z3 };
-            for (int i = 0;i < 3;i++) {
+            for (int i = 0; i < 3; ++i) {
                 data.push_back(v[i * 3 + 0]);
                 data.push_back(v[i * 3 + 1]);
                 data.push_back(v[i * 3 + 2]);
@@ -485,6 +899,13 @@ void displayCallback() {
     setupLights(currentScene);
     drawSkybox(currentScene);
 
+    // Ground first
+    drawGround(currentScene);
+
+    // 3D clouds
+    drawClouds(currentScene);
+
+    // Scenes
     if (currentScene == ANCIENT_SCENE) {
         drawAncientScene();
     }
@@ -565,7 +986,7 @@ void motionCallback(int x, int y) {
     camera.yaw += dx * sensitivity;
     camera.pitch -= dy * sensitivity;
 
-    if (camera.pitch > 89.0f)  camera.pitch = 89.0f;
+    if (camera.pitch > 89.0f) camera.pitch = 89.0f;
     if (camera.pitch < -89.0f) camera.pitch = -89.0f;
 
     glutPostRedisplay();
@@ -597,7 +1018,7 @@ void initGL() {
 
 void initScene() {
     createPyramidMesh(pyramidMesh);
-    createGroundMesh(groundMesh);
+    createGroundMesh(groundMesh); // kept for VBO usage requirement
 }
 
 // ---------------------- main ----------------------
