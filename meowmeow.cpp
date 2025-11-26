@@ -80,14 +80,14 @@ float touristBounce = 0.0f;
 bool fogEnabled = true;
 bool showHelp = true;   // toggle for showing/hiding the controls overlay meowmeow
 
-// Forward declarations for drawing helpers
+// Forward declarations for drawing helpers: clouds, stairs, ground, template, fallen tree (ancient scene)
 void drawClouds(SceneType scene);
 void drawStairs();
 void drawGround(SceneType scene);
 void drawTempleDetails(SceneType scene);
 void drawFallenTree(float x, float z, float length, float angleDegrees);
 
-// Meshes
+// Meshes, the one for the pyramid and for the ground
 MeshVBO pyramidMesh;
 MeshVBO groundMesh;
 
@@ -231,7 +231,7 @@ void drawMeshLit(const MeshVBO& mesh, float r, float g, float b) {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-// Big visible ground using a cube, so it always shows clearly
+// Big visible ground
 void drawGround(SceneType scene) {
     glDisable(GL_LIGHTING);
     glPushMatrix();
@@ -248,7 +248,7 @@ void drawGround(SceneType scene) {
     glEnable(GL_LIGHTING);
 }
 
-// Simple tree: trunk (box) + canopy (scaled sphere-ish)
+// Simple tree: trunk (box) + canopy (scaled sphere-ish), basically rectangular prism + sphere
 void drawTree(float x, float z, float scale, SceneType scene) {
     glPushMatrix();
     glTranslatef(x, 0.0f, z);
@@ -276,7 +276,7 @@ void drawTree(float x, float z, float scale, SceneType scene) {
     glPopMatrix();
 }
 
-// Simple tourist as a capsule-like figure
+// Simple tourist as a capsule-like figure, another combination of scaled cubes and spheres
 void drawTourist(float x, float z) {
     glPushMatrix();
     glTranslatef(x, 0.0f + touristBounce, z);
@@ -391,7 +391,7 @@ void drawRock(float x, float z, float scale)
 void drawAncientGroundPatches()
 {
     glDisable(GL_LIGHTING);
-    glColor3f(0.18f, 0.13f, 0.09f);   // darker dirt
+    glColor3f(0.18f, 0.13f, 0.09f);   // darker dirt to make it more look like abandoned-ish
 
     auto patch = [](float x, float z, float sx, float sz)
         {
@@ -455,9 +455,8 @@ void drawOneStaircase(float yawDegrees) {
     const float baseZEnd = baseHalf - 10.0f;
     const float stepDepth = 1.2f;
 
-    // Stop the stairs a bit before the very top so they don't overlap the temple
+    // Stop the stairs a bit before the very top so they don't overlap the temple, very big problem, readjusted for hours
     const float maxStairY = pyramidHeight - stepHeight * 3.0f;
-    // tweak 3.0f up/down to control how far they stop from the top
 
     glPushMatrix();
     glRotatef(yawDegrees, 0.0f, 1.0f, 0.0f);
@@ -504,16 +503,11 @@ void drawStairs() {
 
 
 // ---------------- Temple entrance + decorative details ----------------
-//
-// NOTE: These numbers assume the same values used in createPyramidMesh():
-//   terraceCount   = 9
-//   terraceHeight  = 1.4f
-//   temple half-size = 2.2f (cube)
-// If you change those, tweak the constants here a bit.
 
 void drawTempleDetails(SceneType scene)
 {
     // ---- Temple geometry (must match createPyramidMesh) ----
+
     const int   terraceCount = 9;
     const float terraceHeight = 1.4f;
     const float templeHalfSize = 3.5f;   // half size used in addBox(...)
