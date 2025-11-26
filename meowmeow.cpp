@@ -16,7 +16,7 @@
 
 struct MeshVBO {
     GLuint vbo = 0;
-    int    vertexCount = 0; // number of vertices (not floats)
+    int vertexCount = 0; // number of vertices (not floats)
 };
 
 // Interleaved: [x y z nx ny nz] per vertex
@@ -77,13 +77,15 @@ SceneType currentScene = ANCIENT_SCENE;
 float timeSeconds = 0.0f;
 float cloudOffset = 0.0f;
 float touristBounce = 0.0f;
+bool fogEnabled = true;
+bool showHelp = true;   // toggle for showing/hiding the controls overlay meowmeow
 
 // Forward declarations for drawing helpers
 void drawClouds(SceneType scene);
 void drawStairs();
 void drawGround(SceneType scene);
 void drawTempleDetails(SceneType scene);
-
+void drawFallenTree(float x, float z, float length, float angleDegrees);
 
 // Meshes
 MeshVBO pyramidMesh;
@@ -334,6 +336,35 @@ void drawClouds(SceneType scene) {
 
     glEnable(GL_LIGHTING);
 }
+
+void drawFallenTree(float x, float z, float length, float angleDegrees) {
+    glPushMatrix();
+    glTranslatef(x, 0.0f, z);
+    glRotatef(angleDegrees, 0.0f, 1.0f, 0.0f);
+    glRotatef(-20.0f, 0.0f, 0.0f, 1.0f); // slight tilt to “lean”
+
+    glDisable(GL_LIGHTING);
+
+    // Trunk
+    glColor3f(0.28f, 0.18f, 0.10f);
+    glPushMatrix();
+    glTranslatef(0.0f, 1.0f, 0.0f);
+    glScalef(length, 0.6f, 0.6f);
+    glutSolidCube(1.0);
+    glPopMatrix();
+
+    // Some leaves at one end
+    glColor3f(0.05f, 0.25f, 0.05f);
+    glPushMatrix();
+    glTranslatef(length * 0.5f, 1.3f, 0.0f);
+    glScalef(2.0f, 1.5f, 2.0f);
+    glutSolidSphere(0.8, 12, 12);
+    glPopMatrix();
+
+    glEnable(GL_LIGHTING);
+    glPopMatrix();
+}
+
 
 // ---------------- Rocks and "dirty" ground for ancient scene ----------------
 
@@ -696,6 +727,10 @@ void drawAncientScene() {
 
         drawTree(x, z, scale, ANCIENT_SCENE);
     }
+
+    // Fallen tree leaning toward the pyramid front
+    drawFallenTree(18.0f, 10.0f, 6.0f, 200.0f);
+
 }
 
 
@@ -869,6 +904,7 @@ void drawHUD() {
     glPushMatrix();
     glLoadIdentity();
 
+    // -------------------- Title at top left --------------------
     glColor3f(1, 1, 1);
     if (currentScene == ANCIENT_SCENE) {
         renderBitmapString(10, h - 30, "Ancient Chichen Itza - Lost in the Jungle");
@@ -876,8 +912,70 @@ void drawHUD() {
     else {
         renderBitmapString(10, h - 30, "Modern Chichen Itza - Tourist Landmark");
     }
-    renderBitmapString(10, 40, "SPACE: Switch scene   WASD/QE: Move   Mouse-drag: Look   ESC: Quit");
 
+    if (!showHelp) {
+        // Small hint at bottom-left when help is hidden
+        glColor3f(0.8f, 0.8f, 0.8f);
+        renderBitmapString(10, 20, "[H] Show controls");
+    }
+    else {
+        // -------------------- Controls panel --------------------
+        int x = 10;
+        int y = h - 70;    // start a bit below the title
+        int dy = 22;       // line spacing
+
+        // Optional: a slightly dark background panel for readability
+        glDisable(GL_TEXTURE_2D);
+        glColor4f(0.0f, 0.0f, 0.0f, 0.55f);
+        glBegin(GL_QUADS);
+        glVertex2f(5, y + 10);
+        glVertex2f(360, y + 10);
+        glVertex2f(360, y - 9 * dy - 10);
+        glVertex2f(5, y - 9 * dy - 10);
+        glEnd();
+
+        // Controls text
+        glColor3f(1.0f, 1.0f, 1.0f);
+        renderBitmapString((float)x, (float)y, "Controls:");
+        y -= dy;
+
+        renderBitmapString((float)x, (float)y, "  W / A / S / D : Move forward / left / back / right");
+        y -= dy;
+        renderBitmapString((float)x, (float)y, "  Q / E         : Move up / down");
+        y -= dy;
+        renderBitmapString((float)x, (float)y, "  Mouse drag    : Look around");
+        y -= dy;
+        renderBitmapString((float)x, (float)y, "  Arrow keys    : Rotate camera");
+        y -= dy;
+        renderBitmapString((float)x, (float)y, "  SPACE         : Switch Ancient / Modern scene");
+        y -= dy;
+        renderBitmapString((float)x, (float)y, "  F             : Toggle fog (Ancient scene)");
+        y -= dy;
+        renderBitmapString((float)x, (float)y, "  H             : Show / hide this help panel");
+        y -= dy;
+        renderBitmapString((float)x, (float)y, "  ESC           : Quit application");
+
+        // Dynamic info line (example: fog state if you implemented fogEnabled)
+        y -= dy;
+        char infoLine[128];
+
+        if (currentScene == ANCIENT_SCENE) {
+            // If you don't have fogEnabled, remove this block
+            extern bool fogEnabled; // make sure fogEnabled is declared globally
+            snprintf(infoLine, sizeof(infoLine),
+                "Status: Scene = Ancient | Fog = %s",
+                fogEnabled ? "ON" : "OFF");
+        }
+        else {
+            snprintf(infoLine, sizeof(infoLine),
+                "Status: Scene = Modern");
+        }
+
+        glColor3f(0.8f, 0.9f, 1.0f);
+        renderBitmapString((float)x, (float)y, infoLine);
+    }
+
+    // Restore matrices
     glPopMatrix();
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
@@ -887,6 +985,7 @@ void drawHUD() {
     glEnable(GL_LIGHTING);
 }
 
+
 // ---------------------- GLUT Callbacks ----------------------
 
 bool dragging = false;
@@ -894,6 +993,13 @@ int lastMouseX = 0, lastMouseY = 0;
 
 void displayCallback() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    if (currentScene == ANCIENT_SCENE && fogEnabled) {
+        glEnable(GL_FOG);
+    }
+    else {
+        glDisable(GL_FOG);
+    }
 
     applyCamera();
     setupLights(currentScene);
@@ -951,6 +1057,12 @@ void keyboardCallback(unsigned char key, int x, int y) {
     case 'e': case 'E':
         moveCamera(0.0f, 0.0f, -moveSpeed);
         break;
+    case 'h': case 'H':
+        showHelp = !showHelp;
+        break;
+    case 'f': case 'F':
+        fogEnabled = !fogEnabled;
+        break;
     case ' ':
         currentScene = (currentScene == ANCIENT_SCENE) ? MODERN_SCENE : ANCIENT_SCENE;
         break;
@@ -1003,6 +1115,30 @@ void timerCallback(int value) {
     glutTimerFunc(16, timerCallback, 0);
 }
 
+void specialCallback(int key, int x, int y) {
+    float rotateSpeed = 2.0f;
+    float pitchSpeed = 2.0f;
+
+    switch (key) {
+    case GLUT_KEY_LEFT:
+        camera.yaw -= rotateSpeed;
+        break;
+    case GLUT_KEY_RIGHT:
+        camera.yaw += rotateSpeed;
+        break;
+    case GLUT_KEY_UP:
+        camera.pitch += pitchSpeed;
+        if (camera.pitch > 89.0f) camera.pitch = 89.0f;
+        break;
+    case GLUT_KEY_DOWN:
+        camera.pitch -= pitchSpeed;
+        if (camera.pitch < -89.0f) camera.pitch = -89.0f;
+        break;
+    }
+
+    glutPostRedisplay();
+}
+
 // ---------------------- Initialization ----------------------
 
 void initGL() {
@@ -1014,7 +1150,15 @@ void initGL() {
 
     glEnable(GL_COLOR_MATERIAL);
     glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+
+    // --- Fog base setup (we'll enable/disable per-frame) ---
+    glFogi(GL_FOG_MODE, GL_EXP2);          // EXP2 = smoother, atmospheric
+    GLfloat fogColor[] = { 0.02f, 0.02f, 0.06f, 1.0f }; // dark bluish night fog
+    glFogfv(GL_FOG_COLOR, fogColor);
+    glFogf(GL_FOG_DENSITY, 0.015f);        // tweak for more/less fog
+    glHint(GL_FOG_HINT, GL_NICEST);
 }
+
 
 void initScene() {
     createPyramidMesh(pyramidMesh);
@@ -1026,7 +1170,7 @@ void initScene() {
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-    glutInitWindowSize(1200, 900);
+    glutInitWindowSize(1980, 1080);
     glutCreateWindow("Chichen Itza Through Time");
 
     initGL();
@@ -1035,6 +1179,7 @@ int main(int argc, char** argv) {
     glutDisplayFunc(displayCallback);
     glutReshapeFunc(reshapeCallback);
     glutKeyboardFunc(keyboardCallback);
+    glutSpecialFunc(specialCallback);
     glutMouseFunc(mouseCallback);
     glutMotionFunc(motionCallback);
     glutTimerFunc(16, timerCallback, 0);
